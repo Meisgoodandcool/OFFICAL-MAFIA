@@ -1,4 +1,4 @@
-import { addTask, updateTaskStatus } from '../../../lib/db'
+import { addTask, updateTaskStatus } from '../../lib/db'
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
