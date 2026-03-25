@@ -1,4 +1,4 @@
-import { addInfraction } from '../../../lib/db'
+import { addInfraction } from '../../lib/db'
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
