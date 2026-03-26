@@ -6,44 +6,38 @@ export default function Hicom() {
   const router = useRouter()
   const [staff, setStaff] = useState([])
   const [selected, setSelected] = useState(null)
-  const [view, setView] = useState('roster') // roster | member
-  const [modal, setModal] = useState(null) // null | 'addStaff' | 'addInfraction' | 'addTask' | 'addReport'
+  const [view, setView] = useState('roster')
+  const [modal, setModal] = useState(null)
   const [form, setForm] = useState({})
   const [loading, setLoading] = useState(true)
 
-useEffect(() => {
-  const role = sessionStorage.getItem('mafia_role')
-  if (role !== 'hicom') { router.push('/'); return }
-  fetchStaff()
-}, [])
-
-async function fetchStaff() {
-  setLoading(true)
-  try {
-    const res = await fetch('/api/staff')
-    const data = await res.json()
-    setStaff(Array.isArray(data) ? data : [])
-  } catch(e) {
-    setStaff([])
-  }
-  setLoading(false)
-}
+  useEffect(() => {
+    const role = sessionStorage.getItem('mafia_role')
+    if (role !== 'hicom') { router.push('/'); return }
+    fetchStaff()
+  }, [])
 
   async function fetchStaff() {
     setLoading(true)
-    const res = await fetch('/api/staff')
-    const data = await res.json()
-    setStaff(data)
+    try {
+      const res = await fetch('/api/staff')
+      const data = await res.json()
+      setStaff(Array.isArray(data) ? data : [])
+    } catch(e) {
+      setStaff([])
+    }
     setLoading(false)
   }
 
   async function handleAddStaff() {
     if (!form.username || !form.role) return
-    await fetch('/api/staff', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
-    })
+    try {
+      await fetch('/api/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      })
+    } catch(e) {}
     setModal(null)
     setForm({})
     fetchStaff()
@@ -51,11 +45,13 @@ async function fetchStaff() {
 
   async function handleDeleteStaff(id) {
     if (!confirm('Remove this member from the roster?')) return
-    await fetch('/api/staff', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id })
-    })
+    try {
+      await fetch('/api/staff', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
+    } catch(e) {}
     setSelected(null)
     setView('roster')
     fetchStaff()
@@ -63,11 +59,13 @@ async function fetchStaff() {
 
   async function handleAddInfraction() {
     if (!form.reason) return
-    await fetch('/api/infractions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ staffId: selected.id, reason: form.reason, severity: form.severity || 'warning' })
-    })
+    try {
+      await fetch('/api/infractions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staffId: selected.id, reason: form.reason, severity: form.severity || 'warning' })
+      })
+    } catch(e) {}
     setModal(null)
     setForm({})
     refreshSelected()
@@ -75,11 +73,13 @@ async function fetchStaff() {
 
   async function handleAddTask() {
     if (!form.title) return
-    await fetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ staffId: selected.id, title: form.title, description: form.description || '' })
-    })
+    try {
+      await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staffId: selected.id, title: form.title, description: form.description || '' })
+      })
+    } catch(e) {}
     setModal(null)
     setForm({})
     refreshSelected()
@@ -87,22 +87,27 @@ async function fetchStaff() {
 
   async function handleAddReport() {
     if (!form.title) return
-    await fetch('/api/reports', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ staffId: selected.id, title: form.title, description: form.description || '', madeBy: 'HICOM' })
-    })
+    try {
+      await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staffId: selected.id, title: form.title, description: form.description || '', madeBy: 'HICOM' })
+      })
+    } catch(e) {}
     setModal(null)
     setForm({})
     refreshSelected()
   }
 
   async function refreshSelected() {
-    const res = await fetch('/api/staff')
-    const data = await res.json()
-    setStaff(data)
-    const updated = data.find(m => m.id === selected.id)
-    if (updated) setSelected(updated)
+    try {
+      const res = await fetch('/api/staff')
+      const data = await res.json()
+      const arr = Array.isArray(data) ? data : []
+      setStaff(arr)
+      const updated = arr.find(m => m.id === selected.id)
+      if (updated) setSelected(updated)
+    } catch(e) {}
   }
 
   function openMember(member) {
@@ -171,19 +176,17 @@ async function fetchStaff() {
       {view === 'member' && selected && (
         <div>
           <button style={s.backBtn} onClick={() => setView('roster')}>← BACK TO ROSTER</button>
-
           <div style={s.memberHeader}>
             <div style={s.bigAvatar}>{selected.username?.[0]?.toUpperCase() || '?'}</div>
             <div>
               <h2 style={s.memberPageName}>{selected.username}</h2>
               <p style={s.memberPageRole}>{selected.role}</p>
-              {selected.minecraft && <p style={s.memberPageSub}>MC: {selected.minecraft}</p>}
+              {selected.discord && <p style={s.memberPageSub}>Discord: {selected.discord}</p>}
             </div>
             <button style={s.dangerBtn} onClick={() => handleDeleteStaff(selected.id)}>REMOVE MEMBER</button>
           </div>
 
           <div style={s.threeCol}>
-            {/* Infractions */}
             <div style={s.panel}>
               <div style={s.panelHeader}>
                 <span style={s.panelTitle}>INFRACTIONS</span>
@@ -202,7 +205,6 @@ async function fetchStaff() {
               ))}
             </div>
 
-            {/* Tasks */}
             <div style={s.panel}>
               <div style={s.panelHeader}>
                 <span style={s.panelTitle}>TASKS</span>
@@ -222,11 +224,9 @@ async function fetchStaff() {
               ))}
             </div>
 
-            {/* Reports */}
             <div style={s.panel}>
               <div style={s.panelHeader}>
                 <span style={s.panelTitle}>REPORTS</span>
-                <button style={s.smallBtn} onClick={() => setModal('addReport')}>+ ADD</button>
               </div>
               {reports.length === 0 ? (
                 <p style={s.muted}>No reports.</p>
@@ -242,7 +242,6 @@ async function fetchStaff() {
         </div>
       )}
 
-      {/* Modals */}
       {modal === 'addStaff' && (
         <Modal title="ADD STAFF MEMBER" onClose={() => { setModal(null); setForm({}) }}>
           <Field label="MINECRAFT USERNAME">
@@ -377,7 +376,7 @@ const s = {
   memberCard: {
     background: '#111', border: '1px solid #1a1a1a',
     padding: '12px 16px', display: 'flex', alignItems: 'center',
-    gap: 12, cursor: 'pointer', transition: 'border-color 0.2s',
+    gap: 12, cursor: 'pointer',
   },
   memberAvatar: {
     width: 36, height: 36, background: '#1a0500',
@@ -391,12 +390,11 @@ const s = {
   memberStats: {},
   statBadge: { fontSize: 9, color: '#555550', letterSpacing: '0.05em' },
   empty: { textAlign: 'center', padding: '60px 0' },
-  muted: { fontSize: 12, color: '#333330', letterSpacing: '0.05em' },
+  muted: { fontSize: 12, color: '#555550', letterSpacing: '0.05em' },
   memberHeader: {
     display: 'flex', alignItems: 'center', gap: 20,
     background: '#111', border: '1px solid #1a1a1a',
-    borderLeft: '3px solid #cc2200', padding: '20px 24px',
-    marginBottom: 24,
+    borderLeft: '3px solid #cc2200', padding: '20px 24px', marginBottom: 24,
   },
   bigAvatar: {
     width: 56, height: 56, background: '#1a0500',
@@ -438,3 +436,4 @@ const s = {
     fontFamily: 'Georgia, serif', outline: 'none', resize: 'vertical',
   },
 }
+
