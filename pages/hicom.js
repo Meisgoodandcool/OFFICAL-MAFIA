@@ -11,11 +11,23 @@ export default function Hicom() {
   const [form, setForm] = useState({})
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const role = sessionStorage.getItem('mafia_role')
-    if (role !== 'hicom') { router.push('/'); return }
-    fetchStaff()
-  }, [])
+useEffect(() => {
+  const role = sessionStorage.getItem('mafia_role')
+  if (role !== 'hicom') { router.push('/'); return }
+  fetchStaff()
+}, [])
+
+async function fetchStaff() {
+  setLoading(true)
+  try {
+    const res = await fetch('/api/staff')
+    const data = await res.json()
+    setStaff(Array.isArray(data) ? data : [])
+  } catch(e) {
+    setStaff([])
+  }
+  setLoading(false)
+}
 
   async function fetchStaff() {
     setLoading(true)
